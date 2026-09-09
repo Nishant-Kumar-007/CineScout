@@ -10,8 +10,14 @@ from backend.parallel_search import search_parallel, format_search_for_prompt
 
 logger = logging.getLogger("cinescout.agent")
 
-PRIMARY_GEMINI_MODEL = "gemini-3.6-flash"
-FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.8-flash", "gemini-3.5-flash"]
+PRIMARY_GEMINI_MODEL = "gemini-3.1-flash-lite"
+FALLBACK_MODELS = [
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash-lite",
+    "gemini-3.6-flash",
+    "gemini-flash-latest",
+    "gemini-3.7-flash"
+]
 
 SYSTEM_INSTRUCTION = """
 You are CineScout, an experienced AI Production Assistant designed for the Indian Film Industry (Bollywood, Sandalwood, Tollywood, Kollywood, Mollywood, and Pan-India productions).

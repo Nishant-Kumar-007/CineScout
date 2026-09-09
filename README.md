@@ -53,7 +53,7 @@ CineScout transforms screenplay scenes into shoot-ready production intelligence 
 
 ## 🛠️ Tech Stack
 
-* **AI Reasoning**: Google Gemini (`gemini-3.7-flash` / `gemini-3.5-flash`) via `google-genai`
+* **AI Reasoning**: Google Gemini (`gemini-3.1-flash-lite` / `gemini-3.5-flash-lite` / `gemini-3.6-flash`) via `google-genai`
 * **Real-World Web Search**: Parallel Live Web Search API (`https://api.parallel.ai/v1beta/search`)
 * **Backend**: FastAPI + Uvicorn (Python 3.14)
 * **Frontend**: Vanilla HTML5, CSS3 (Command Center Dark Theme), JavaScript ES6
