@@ -63,6 +63,7 @@ class FollowUpRequest(BaseModel):
 
 
 @app.get("/api/health")
+@app.get("/health")
 async def health():
     gemini_configured = bool(os.getenv("GEMINI_API_KEY"))
     parallel_configured = bool(os.getenv("PARALLEL_API_KEY"))
@@ -77,6 +78,7 @@ async def health():
 
 
 @app.get("/api/sample_scenes")
+@app.get("/sample_scenes")
 async def get_sample_scenes():
     """Curated Indian cinema screenplay scenes matching CineScout specification."""
     return [
@@ -106,6 +108,7 @@ async def get_sample_scenes():
 
 
 @app.post("/api/analyze")
+@app.post("/analyze")
 async def analyze_scene(req: SceneAnalyzeRequest):
     """Executes the full CineScout agent pipeline."""
     try:
@@ -118,6 +121,7 @@ async def analyze_scene(req: SceneAnalyzeRequest):
 
 
 @app.post("/api/followup")
+@app.post("/followup")
 async def ask_followup(req: FollowUpRequest):
     """Executes an interactive follow-up with dynamic Parallel re-search."""
     try:

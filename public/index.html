@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineScout — From Screenplay to Shoot-Ready Intelligence</title>
+  <meta name="description" content="Production Intelligence for Indian Cinema powered by Gemini and Parallel Live Web Search.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="command-center">
+
+  <!-- Top Cinematic Navigation Bar -->
+  <header class="top-nav">
+    <div class="brand-group">
+      <div class="brand-logo">
+        <span class="clapper-icon">🎬</span>
+        <div class="brand-text">
+          <h1 class="brand-title">CINESCOUT</h1>
+          <span class="brand-tagline">FILM SCOUT &bull; PRODUCTION ASSISTANT &bull; INDIA</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="engine-badges">
+      <div class="badge engine-badge">
+        <span class="dot gemini-dot"></span>
+        <span>GEMINI</span>
+      </div>
+      <div class="badge engine-badge">
+        <span class="dot parallel-dot"></span>
+        <span>PARALLEL</span>
+      </div>
+      <div id="agent-status" class="badge status-badge status-live">
+        <span class="pulse-dot"></span>
+        <span id="agent-status-text">ONLINE &bull; READY</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Command Center Grid -->
+  <main class="console-container">
+    
+    <!-- Left Column: Input Console & Live Agent Trace -->
+    <section class="left-console">
+      
+      <!-- Screenplay Input Panel -->
+      <div class="glass-card input-panel">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="header-icon">📜</span>
+            <h2 class="card-title">YOUR SCREENPLAY SCENE</h2>
+          </div>
+          <span class="pill hub-pill">SCOUT ANYWHERE IN INDIA</span>
+        </div>
+
+        <p class="panel-desc">Paste your scene or pick a sample below. We'll search real Indian locations, check police permissions, estimate daily costs, and build a shoot plan.</p>
+
+        <!-- Presets -->
+        <div class="preset-selector">
+          <span class="preset-label">SAMPLE SCENES:</span>
+          <div class="preset-buttons">
+            <button class="preset-btn active" data-preset="bengaluru-textile-mill" id="btn-preset-bengaluru">
+              Bengaluru — Industrial Chase
+            </button>
+            <button class="preset-btn" data-preset="mumbai-docks-noir" id="btn-preset-mumbai">
+              Mumbai — Dockyard Smuggling
+            </button>
+            <button class="preset-btn" data-preset="hyderabad-heritage-fort" id="btn-preset-hyderabad">
+              Hyderabad — Fortress Heist
+            </button>
+            <button class="preset-btn custom-scene-btn" id="btn-write-own-scene">
+              + Write your own scene
+            </button>
+          </div>
+        </div>
+
+        <!-- Textarea -->
+        <div class="textarea-wrapper">
+          <div class="line-numbers">
+            <span>01</span><span>02</span><span>03</span><span>04</span><span>05</span><span>06</span>
+          </div>
+          <textarea id="scene-input" rows="6" placeholder="Paste your screenplay scene here (e.g., A detective chases a suspect through an abandoned textile mill in Bengaluru at midnight...)" spellcheck="false"></textarea>
+        </div>
+
+        <!-- Action Button -->
+        <div class="action-bar">
+          <button id="btn-analyze" class="btn-primary">
+            <span class="btn-icon">■</span>
+            <span class="btn-text">SCOUT THIS SCENE</span>
+          </button>
+          <div class="btn-helper-line">
+            Searches real locations across India using live web data and AI analysis.
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Agent Trace / Terminal -->
+      <div class="glass-card trace-panel">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="terminal-icon">&gt;_</span>
+            <h3 class="card-title">LIVE RESEARCH PROGRESS</h3>
+          </div>
+          <span id="trace-counter" class="pill mono-pill">STANDBY</span>
+        </div>
+
+        <div id="agent-trace" class="trace-stream">
+          <div class="trace-empty-state">
+            <span class="trace-idle-icon">📡</span>
+            <p>Waiting for your scene. Once you click "Scout This Scene", you'll see our research steps here in real time—searching live locations, checking city rules, and calculating costs.</p>
+          </div>
+        </div>
+
+        <!-- Timing Summary Footer -->
+        <div id="trace-timing-footer" class="trace-timing-footer hidden">
+          <span class="timing-badge" id="timing-badge">Completed in 7.1s</span>
+          <span class="timing-sub">Live web research &bull; zero simulated data</span>
+        </div>
+
+        <!-- Live Web Evidence Bar -->
+        <div id="citations-container" class="citations-box hidden">
+          <div class="citations-header">
+            <div class="citations-header-left">
+              <span class="live-dot-pulse">●</span>
+              <strong>REAL-WORLD SOURCES WE CHECKED</strong>
+            </div>
+            <span class="citations-meta" id="citations-meta">10 sources retrieved &bull; Retrieved 21:41 IST</span>
+          </div>
+          <div id="citations-list" class="citations-grid"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Right Column: Production Intelligence Dashboard -->
+    <section class="right-console">
+
+      <!-- Placeholder State -->
+      <div id="dashboard-empty" class="dashboard-empty-card">
+        <div class="empty-icon-wrap">
+          <span class="empty-big-icon">🎬</span>
+        </div>
+        <h3>Your Shoot Plan Will Appear Here</h3>
+        <p class="empty-lead">Turn any movie scene into a real-world shoot plan.</p>
+        <p class="empty-sub">CineScout bridges the gap between your script and the real world—so you know where, how, and for how much you can shoot.</p>
+        <div class="feature-bullets">
+          <div class="feat-item"><span>✓</span> <strong>Interactive Map:</strong> Real candidate locations pinned on a dark map</div>
+          <div class="feat-item"><span>✓</span> <strong>Verified Sources:</strong> Direct links to actual government, municipal, and filming portals</div>
+          <div class="feat-item"><span>✓</span> <strong>Suggested Shot List:</strong> Practical camera setups and lenses tailored to the location</div>
+          <div class="feat-item"><span>✓</span> <strong>Permits &amp; Police NOC:</strong> Clear checklist for police, traffic, and municipal clearances in India</div>
+          <div class="feat-item"><span>✓</span> <strong>Instant Comparisons:</strong> Ask any follow-up question (switch cities, cut budget) for a side-by-side comparison</div>
+        </div>
+      </div>
+
+      <!-- Active Dashboard Content (Hidden until analyzed) -->
+      <div id="dashboard-content" class="dashboard-content hidden">
+
+        <!-- 1. AGENT RECOMMENDATION (Visual Dominance) -->
+        <div class="glass-card recommendation-card dominant-card">
+          <div class="rec-banner">
+            <div class="rec-title-wrap">
+              <span class="rec-badge">🎬 TOP RECOMMENDED LOCATION</span>
+              <h2 id="rec-location-name" class="rec-location">Mukesh Mills</h2>
+              <div class="rec-city-tag" id="rec-city-tag">Colaba, Mumbai &bull; Maharashtra</div>
+            </div>
+            <div class="rec-score-box">
+              <span class="score-number" id="rec-fit-percent">94%</span>
+              <span class="score-label">SCENE MATCH</span>
+            </div>
+          </div>
+
+          <p id="rec-tagline" class="rec-tagline">"Great combination of industrial look, structural safety, and proven shoot history."</p>
+
+          <div class="rec-deep-rationale">
+            <span class="rationale-label">WHY THIS LOCATION WORKS BEST:</span>
+            <ul id="rec-why-bullets" class="clean-bullets-list">
+              <li>Strong visual match with required industrial architecture</li>
+              <li>Authentic environment avoiding expensive studio reconstruction</li>
+              <li>Suitable for required dark midnight scene tone</li>
+              <li>Better logistical trade-off than unsafe derelict alternatives</li>
+            </ul>
+          </div>
+
+          <div class="rec-columns">
+            <div class="rec-col">
+              <span class="rec-col-title">CHALLENGES &amp; TRADE-OFFS:</span>
+              <ul id="rec-tradeoffs" class="tradeoff-list"></ul>
+              <div class="why-wins-box">
+                <span class="why-wins-title">WHY IT'S STILL WORTH IT:</span>
+                <p id="rec-why-still-wins" class="why-wins-text">—</p>
+              </div>
+            </div>
+            <div class="rec-col">
+              <span class="rec-col-title">WHY WE RULED OUT OTHER SPOTS:</span>
+              <p id="rec-why-not-alt" class="col-text">—</p>
+
+              <!-- Compact Evidence Used connector -->
+              <div class="evidence-used-compact">
+                <span class="rec-col-title">SOURCES BEHIND THIS PICK:</span>
+                <p class="evidence-used-summary" id="evidence-used-count">Backed by 4 real-world sources</p>
+                <div id="evidence-used-chips" class="evidence-chips-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. SCENE BREAKDOWN CARD -->
+        <div class="glass-card specs-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="header-icon">🧠</span>
+              <h3 class="card-title">SCENE BREAKDOWN</h3>
+            </div>
+            <div class="confidence-badge" title="How closely our analysis matches your screenplay description">
+              <span class="conf-dot">●</span>
+              <span id="ai-confidence-label">Script match confidence: 92%</span>
+            </div>
+          </div>
+
+          <div class="specs-grid">
+            <div class="spec-item">
+              <span class="spec-label">SETTING</span>
+              <span id="spec-setting" class="spec-value highlight">—</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">TIME OF DAY</span>
+              <span id="spec-time" class="spec-value">—</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">GENRE &amp; TONE</span>
+              <span id="spec-genre" class="spec-value">—</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">COMPLEXITY</span>
+              <span id="spec-complexity" class="spec-badge badge-high">HIGH</span>
+            </div>
+          </div>
+
+          <div class="requirements-section">
+            <span class="section-micro-label">WHAT THIS SCENE REQUIRES</span>
+            <ul id="requirements-list" class="req-chips"></ul>
+          </div>
+        </div>
+
+        <!-- 3. LIST VIEW <-> RADAR VIEW TOGGLE -->
+        <div class="view-toggle-bar">
+          <div class="view-toggle-label">EXPLORE CANDIDATE LOCATIONS:</div>
+          <div class="toggle-group" role="tablist">
+            <button id="btn-view-radar" class="toggle-btn active" role="tab" aria-selected="true">
+              <span class="toggle-icon">◎</span>
+              <span>MAP VIEW</span>
+            </button>
+            <button id="btn-view-list" class="toggle-btn" role="tab" aria-selected="false">
+              <span class="toggle-icon">☰</span>
+              <span>COMPARE TABLE</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. LIVE PRODUCTION RADAR CONTAINER -->
+        <div id="radar-container-card" class="glass-card radar-card">
+          <div class="card-header radar-card-header">
+            <div class="card-title-group">
+              <span class="radar-ping-icon">◎</span>
+              <h3 class="card-title">LOCATION EXPLORER MAP</h3>
+            </div>
+            <div class="radar-legend">
+              <span class="legend-item"><span class="legend-dot dot-best"></span> Best Match</span>
+              <span class="legend-item"><span class="legend-dot dot-alt"></span> Alternative</span>
+              <span class="legend-item"><span class="legend-dot dot-risk"></span> Watch Out</span>
+            </div>
+          </div>
+
+          <div class="radar-viewport-wrapper">
+            <!-- Dark Leaflet Map -->
+            <div id="radar-map" class="radar-map-canvas"></div>
+            
+            <!-- Animated Radar Scanner Sweep Overlay -->
+            <div class="radar-sweep-overlay pointer-events-none"></div>
+
+            <!-- Selected Location Floating Side Panel -->
+            <div id="radar-side-panel" class="radar-side-panel">
+              <div class="panel-header-row">
+                <span class="panel-tag">LOCATION DETAILS</span>
+                <button id="btn-close-radar-panel" class="btn-close-panel" title="Dismiss">✕</button>
+              </div>
+              <h4 id="radar-panel-title" class="radar-panel-title">Mukesh Mills</h4>
+              <div class="radar-panel-fit" id="radar-panel-fit">94% SCENE MATCH</div>
+              
+              <div class="radar-panel-metrics">
+                <div class="radar-metric">
+                  <span class="m-label">Look &amp; Feel</span>
+                  <span class="m-val" id="radar-panel-visual">94</span>
+                </div>
+                <div class="radar-metric">
+                  <span class="m-label">Access</span>
+                  <span class="m-val" id="radar-panel-logistics">Moderate</span>
+                </div>
+                <div class="radar-metric">
+                  <span class="m-label">Safety &amp; Rules</span>
+                  <span class="m-val" id="radar-panel-risk">42</span>
+                </div>
+              </div>
+
+              <div class="radar-panel-sources" id="radar-panel-sources">
+                <span>📡</span> <span id="radar-panel-sources-count">4 VERIFIED WEB SOURCES</span>
+              </div>
+
+              <p class="radar-panel-summary" id="radar-panel-summary">
+                Identified through live web evidence as an established industrial filming location.
+              </p>
+
+              <div class="radar-panel-actions">
+                <button id="btn-radar-view-evidence" class="btn-compact-outline">VIEW SOURCES</button>
+                <button id="btn-radar-use-location" class="btn-compact-gold">CHOOSE THIS SPOT</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. EVIDENCE CONSTELLATION PANEL (TRUST MOMENT) -->
+        <div class="glass-card constellation-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="header-icon">✦</span>
+              <h3 class="card-title">HOW WE CONNECTED THE SOURCES</h3>
+            </div>
+            <span class="pill cyan-pill" id="constellation-count-pill">4 SOURCES CHECKED</span>
+          </div>
+          
+          <p class="section-subtext">
+            Every recommendation is backed by real live web data. Click on any source to visit the actual municipal portal, guidelines, or directory listing.
+          </p>
+
+          <div id="constellation-canvas-wrap" class="constellation-container">
+            <svg id="constellation-svg" class="constellation-svg" width="100%" height="280"></svg>
+            <div id="constellation-nodes" class="constellation-nodes-layer"></div>
+          </div>
+        </div>
+
+        <!-- 6. LOCATION CANDIDATES & RISK MATRIX (LIST VIEW) -->
+        <div id="matrix-container-card" class="glass-card matrix-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="header-icon">📍</span>
+              <h3 class="card-title">CANDIDATE LOCATIONS &amp; COMPARISON</h3>
+            </div>
+            <span class="pill cyan-pill">LIVE WEB RESEARCH</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="matrix-table">
+              <thead>
+                <tr>
+                  <th>LOCATION</th>
+                  <th>REGION / HUB</th>
+                  <th title="How well this location matches your scene visually.">
+                    LOOK &amp; VIBE ⓘ
+                  </th>
+                  <th>ACCESSIBILITY</th>
+                  <th title="Potential legal, crowd, or safety hurdles identified in research.">
+                    PERMIT &amp; SAFETY RISK ⓘ
+                  </th>
+                  <th title="Estimated daily location rate in Indian Rupees based on current market rates.">
+                    EST. DAY RATE ⓘ
+                  </th>
+                  <th>WHY WE CONSIDERED IT</th>
+                </tr>
+              </thead>
+              <tbody id="locations-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 7. AI SHOT PLANNER (USER-HELPFUL SIGNATURE FEATURE) -->
+        <div class="glass-card shot-planner-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="header-icon">🎥</span>
+              <h3 class="card-title">SUGGESTED SHOT LIST (FOR THIS LOCATION)</h3>
+            </div>
+            <div class="shot-style-controls">
+              <span class="ctrl-label">STYLE:</span>
+              <div class="style-toggle-buttons">
+                <button class="style-btn active" data-style="all">ALL</button>
+                <button class="style-btn" data-style="cinematic">CINEMATIC</button>
+                <button class="style-btn" data-style="fast-paced">FAST-PACED</button>
+                <button class="style-btn" data-style="handheld">HANDHELD</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="shot-flow-header">
+            <span class="flow-label">CAMERA SETUP ORDER:</span>
+            <span class="flow-steps" id="shot-flow-steps">01 &rarr; 02 &rarr; 03 &rarr; 04 &rarr; 05</span>
+          </div>
+
+          <!-- Cards Grid -->
+          <div id="shot-cards-grid" class="shot-cards-grid"></div>
+        </div>
+
+        <!-- 8 & 9. DUAL CARDS: INDIAN PERMITS & EQUIPMENT RENTALS -->
+        <div class="dual-cards-row">
+          
+          <!-- Indian Regulatory & Permits -->
+          <div class="glass-card info-subcard">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="header-icon">⚖️</span>
+                <h3 class="card-title">PERMITS &amp; POLICE CLEARANCES (INDIA)</h3>
+              </div>
+              <span id="lead-time-pill" class="pill lead-time-pill">EST. LEAD TIME: 12-18 DAYS</span>
+            </div>
+
+            <div class="compliance-sections">
+              <div class="compliance-group">
+                <span class="group-header-label green-text">● OFFICIAL CLEARANCES NEEDED:</span>
+                <ul id="permits-researched-list" class="check-list"></ul>
+              </div>
+              <div class="compliance-group warning-group">
+                <span class="group-header-label amber-text">● DOUBLE-CHECK BEFORE LOCKING DATES:</span>
+                <ul id="permits-confirmation-list" class="warn-list"></ul>
+              </div>
+            </div>
+            <div class="compliance-disclaimer" id="permits-disclaimer">
+              Estimated timelines based on municipal guidelines. Always confirm dates directly with your local authority or film board.
+            </div>
+          </div>
+
+          <!-- Equipment & Rental Options Found -->
+          <div class="glass-card info-subcard">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="header-icon">📦</span>
+                <h3 class="card-title">EQUIPMENT &amp; CREW SAFETY</h3>
+              </div>
+              <span id="budget-pill" class="pill budget-pill">EST: ₹16L - ₹24L</span>
+            </div>
+
+            <div class="compliance-items">
+              <div class="compliance-row">
+                <span class="compliance-title">RECOMMENDED GEAR:</span>
+                <div id="equipment-items-list" class="equipment-list"></div>
+              </div>
+              <div class="compliance-row">
+                <span class="compliance-title">RENTAL HOUSES NEARBY:</span>
+                <div id="rental-partners-chips" class="chips-row"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 10. ASK CINESCOUT & PLAN DELTA (THE BIGGEST WOW FEATURE) -->
+        <div class="glass-card followup-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="header-icon">💬</span>
+              <h3 class="card-title">ASK YOUR PRODUCTION ASSISTANT</h3>
+            </div>
+            <span class="pill live-pill">EXPLORE WHAT-IFS</span>
+          </div>
+
+          <p class="followup-desc">
+            Have a question or want to change your shoot plan? Ask below—such as switching cities, night drone rules, or cutting expenses. We'll search the live web and show you a clean side-by-side comparison with your original plan.
+          </p>
+
+          <!-- Quick Follow-up Buttons -->
+          <div class="quick-followups">
+            <button class="quick-q-btn" data-q="What if we shoot this in Hyderabad instead?">
+              "What if we shoot this in Hyderabad instead?"
+            </button>
+            <button class="quick-q-btn" data-q="Can we use night-drone filming under current rules?">
+              "Can we use night-drone filming under current rules?"
+            </button>
+            <button class="quick-q-btn" data-q="How can we reduce location and permit costs?">
+              "How can we reduce location and permit costs?"
+            </button>
+          </div>
+
+          <!-- Follow-up Input Bar -->
+          <div class="followup-input-group">
+            <input type="text" id="followup-input" placeholder="Ask any question (e.g. What if we shoot in Hyderabad? Can we film at night with a drone?)...">
+            <button id="btn-followup" class="btn-cyan">
+              <span>ASK QUESTION</span>
+            </button>
+          </div>
+
+          <!-- Follow-up Loading Trace State -->
+          <div id="followup-loading" class="followup-loading-card hidden">
+            <div class="loading-trace-title">CHECKING LIVE OPTIONS:</div>
+            <div class="loading-steps">
+              <div class="l-step active"><span>●</span> Reading your question...</div>
+              <div class="l-step active"><span>●</span> Searching live web for updated rules and locations...</div>
+              <div class="l-step active"><span>●</span> Comparing with your original shoot plan...</div>
+              <div class="l-step active"><span>●</span> Preparing your comparison table...</div>
+            </div>
+          </div>
+
+          <!-- PLAN DELTA Output Container -->
+          <div id="followup-response-area" class="followup-response-area hidden">
+            
+            <div class="delta-header">
+              <div class="delta-header-left">
+                <span class="delta-badge">Δ PLAN COMPARISON</span>
+                <span class="delta-q-text" id="followup-display-q">Q: "What if we shoot this in Hyderabad instead?"</span>
+              </div>
+              <span class="delta-status-tag" id="delta-status-tag">✓ RESEARCHED WITH LIVE WEB DATA</span>
+            </div>
+
+            <!-- Side by Side Delta Comparison Table -->
+            <div class="delta-table-wrap">
+              <table class="delta-table">
+                <thead>
+                  <tr>
+                    <th>WHAT WE'RE LOOKING AT</th>
+                    <th>ORIGINAL PLAN</th>
+                    <th>NEW PROPOSAL</th>
+                    <th>THE DIFFERENCE</th>
+                  </tr>
+                </thead>
+                <tbody id="delta-table-body"></tbody>
+              </table>
+            </div>
+
+            <!-- Trade-off Analysis Box -->
+            <div class="tradeoff-box">
+              <span class="tradeoff-label">THE MAIN TRADE-OFF:</span>
+              <p id="delta-tradeoff" class="tradeoff-content">—</p>
+            </div>
+
+            <!-- Definitive Agent Verdict -->
+            <div class="verdict-box">
+              <div class="verdict-banner">
+                <span class="verdict-title">OUR TAKE:</span>
+                <span class="verdict-tag">DECISION SUMMARY</span>
+              </div>
+              <p id="delta-agent-verdict" class="verdict-text">—</p>
+              <div class="next-step-row">
+                <span class="next-step-label">WHAT TO DO NEXT:</span>
+                <span id="delta-next-step" class="next-step-val">—</span>
+              </div>
+            </div>
+
+            <!-- Follow-up Sources -->
+            <div id="delta-sources-box" class="delta-sources-box">
+              <span class="delta-sources-title">SOURCES CHECKED FOR THIS QUESTION:</span>
+              <div id="delta-sources-list" class="delta-sources-list"></div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
