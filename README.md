@@ -81,3 +81,24 @@ python -m uvicorn backend.server:app --host 127.0.0.1 --port 8000 --reload
 
 ### 4. Open in Browser
 Visit **`http://127.0.0.1:8000/`** to begin scouting.
+
+---
+
+## ☁️ Deploy to Google Cloud Run (Public Web Access)
+
+CineScout is fully containerized and production-ready for **Google Cloud Run**. Anyone with the generated Cloud Run URL can access and run production scouts.
+
+### Fast Track: Deploy via Google Cloud Console (Continuous Deployment from GitHub)
+
+1. Open [Google Cloud Run Console](https://console.cloud.google.com/run).
+2. Click **Create Service**.
+3. Choose **"Continuously deploy from a repository"** and click **Set up with Cloud Build**.
+4. Select repository: **`Nishant-Kumar-007/CineScout`** (Branch: `^main$`).
+5. Set Build Type to **Dockerfile** (source location: `/Dockerfile`).
+6. Under **Authentication**, choose **"Allow unauthenticated invocations"** for public access.
+7. Under **Container, Volumes, Networking, Security** &rarr; **Variables & Secrets**, add:
+   * `GEMINI_API_KEY`: Your Google Gemini API Key
+   * `PARALLEL_API_KEY`: Your Parallel Live Search API Key
+8. Click **Create**.
+
+Google Cloud Build will package the container, configure autoscaling, and provide your permanent public HTTPS URL (e.g., `https://cinescout-xxxxxx-uc.a.run.app`).
