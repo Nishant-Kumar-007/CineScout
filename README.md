@@ -102,3 +102,22 @@ CineScout is fully containerized and production-ready for **Google Cloud Run**. 
 8. Click **Create**.
 
 Google Cloud Build will package the container, configure autoscaling, and provide your permanent public HTTPS URL (e.g., `https://cinescout-xxxxxx-uc.a.run.app`).
+
+---
+
+## ▲ Deploy to Vercel (1-Click Public Web Access)
+
+CineScout is configured with native Vercel serverless Python support via `api/index.py` and `vercel.json`.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNishant-Kumar-007%2FCineScout&env=GEMINI_API_KEY,PARALLEL_API_KEY&project-name=cinescout&repo-name=cinescout)
+
+### Fast Track: Deploy via Vercel Dashboard
+
+1. Go to **[vercel.com/new](https://vercel.com/new)**.
+2. Click **Import** next to your GitHub repository **`Nishant-Kumar-007/CineScout`**.
+3. Under **Environment Variables**, add:
+   * **`GEMINI_API_KEY`**: `your_gemini_api_key`
+   * **`PARALLEL_API_KEY`**: `your_parallel_api_key`
+4. Click **Deploy**.
+
+Vercel will build and launch your live URL (e.g. `https://cinescout.vercel.app`) in under 45 seconds!
