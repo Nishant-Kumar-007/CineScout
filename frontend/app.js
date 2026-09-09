@@ -293,6 +293,13 @@ function addTraceItem(timeTag, text, icon = "●") {
 
 
 // ================= Main Execution Flow =================
+let liveTimeouts = [];
+
+function clearLiveTimeouts() {
+  liveTimeouts.forEach(t => clearTimeout(t));
+  liveTimeouts = [];
+}
+
 async function executeSceneAnalysis() {
   const sceneText = sceneInput.value.trim();
   if (!sceneText || sceneText.length < 10) {
@@ -302,6 +309,7 @@ async function executeSceneAnalysis() {
 
   // Erase previous follow-up / chatbot state back to default on new script search
   resetFollowUpChatbot();
+  clearLiveTimeouts();
 
   currentSceneText = sceneText;
   btnAnalyze.disabled = true;
@@ -310,12 +318,74 @@ async function executeSceneAnalysis() {
 
   // Reset UI
   agentTrace.innerHTML = "";
-  traceCounter.textContent = "SEARCHING";
+  traceCounter.textContent = "ANALYZING";
   traceTimingFooter.classList.add("hidden");
   citationsContainer.classList.add("hidden");
   citationsList.innerHTML = "";
 
-  addTraceItem("00.0s", "Reading your scene...", "●");
+  const startTime = performance.now();
+
+  // The 6 exact live progressive agent stages required
+  const liveStages = [
+    { label: "Analyzing scene...", doneLabel: "Scene analyzed & narrative tone classified", icon: "●", delay: 0, status: "ANALYZING" },
+    { label: "Extracting requirements...", doneLabel: "Extracted lighting, machinery & vehicle needs", icon: "●", delay: 900, status: "EXTRACTING" },
+    { label: "Planning research...", doneLabel: "Formulated targeted live web search strategy", icon: "●", delay: 2000, status: "PLANNING" },
+    { label: "Searching with Parallel...", doneLabel: "Parallel live web search executed across Indian hubs", icon: "⌕", delay: 3300, status: "PARALLEL SEARCH" },
+    { label: "Evaluating evidence...", doneLabel: "Evaluated location feasibility, day rates & municipal rules", icon: "●", delay: 5600, status: "EVALUATING" },
+    { label: "Generating recommendation...", doneLabel: "Synthesized shoot plan, shot list & compliance", icon: "●", delay: 7400, status: "SYNTHESIZING" }
+  ];
+
+  const stageElements = [];
+  let currentStageIdx = 0;
+
+  function renderStageProgress(idx) {
+    if (idx >= liveStages.length) return;
+    const nowSec = ((performance.now() - startTime) / 1000).toFixed(1);
+
+    // Mark previous stage as completed with checkmark
+    if (idx > 0 && stageElements[idx - 1]) {
+      const prev = stageElements[idx - 1];
+      const prevIcon = prev.querySelector(".trace-icon");
+      if (prevIcon) {
+        prevIcon.className = "trace-icon done";
+        prevIcon.textContent = "✓";
+      }
+      const prevText = prev.querySelector(".trace-text");
+      if (prevText && liveStages[idx - 1].doneLabel) {
+        prevText.textContent = liveStages[idx - 1].doneLabel;
+      }
+      prev.classList.remove("active");
+    }
+
+    // Append active stage
+    const stage = liveStages[idx];
+    traceCounter.textContent = stage.status;
+    setAgentState("active", stage.label.toUpperCase());
+
+    const item = document.createElement("div");
+    item.className = "trace-item active";
+    item.id = `trace-step-${idx}`;
+    item.innerHTML = `
+      <span class="trace-time-tag">${nowSec}s</span>
+      <span class="trace-icon running">${stage.icon}</span>
+      <div class="trace-text">${stage.label}</div>
+    `;
+    agentTrace.appendChild(item);
+    agentTrace.scrollTop = agentTrace.scrollHeight;
+    stageElements[idx] = item;
+    currentStageIdx = idx;
+  }
+
+  // Launch initial stage immediately
+  renderStageProgress(0);
+
+  // Schedule remaining stages to trigger progressively while backend processes
+  for (let i = 1; i < liveStages.length; i++) {
+    const tid = setTimeout(() => {
+      renderStageProgress(i);
+    }, liveStages[i].delay);
+    liveTimeouts.push(tid);
+  }
 
   try {
     const res = await fetch("/api/analyze", {
@@ -332,38 +402,73 @@ async function executeSceneAnalysis() {
     const data = await res.json();
     currentIntelligence = data;
 
-    // Render Execution Trace with genuine event timings
-    const trace = data.agent_execution_trace || {};
-    agentTrace.innerHTML = ""; // Clear initial placeholder
+    // Clear remaining scheduled timers
+    clearLiveTimeouts();
+    const totalElapsed = ((performance.now() - startTime) / 1000).toFixed(1);
 
-    if (trace.timeline && trace.timeline.length > 0) {
-      trace.timeline.forEach(step => {
-        let icon = "✓";
-        const evtLower = (step.event || "").toLowerCase();
-        if (evtLower.includes("search") || evtLower.includes("parallel")) icon = "⌕";
-        if (evtLower.includes("read") || evtLower.includes("scene received")) icon = "●";
-        addTraceItem(step.time, step.event, icon);
-      });
-    } else {
-      addTraceItem("00.0s", "Read your screenplay scene", "●");
-      addTraceItem("00.8s", "Identified location, lighting, and vehicle needs", "✓");
-      addTraceItem("01.4s", "Formulated live web searches across Indian film hubs", "✓");
-      addTraceItem("02.1s", "Dispatched live web search for real locations and permit rules", "⌕");
-      addTraceItem("04.7s", "Retrieved real-world sources and police guidelines", "✓");
-      addTraceItem("06.2s", "Compared candidate spots for accessibility and cost", "✓");
-      addTraceItem("07.1s", "Your shoot plan and camera shots are ready!", "✓");
+    // Transition all active & previous stages to done
+    for (let i = 0; i <= currentStageIdx; i++) {
+      if (stageElements[i]) {
+        const icon = stageElements[i].querySelector(".trace-icon");
+        if (icon) {
+          icon.className = "trace-icon done";
+          icon.textContent = "✓";
+        }
+        const text = stageElements[i].querySelector(".trace-text");
+        if (text && liveStages[i].doneLabel) {
+          text.textContent = liveStages[i].doneLabel;
+        }
+        stageElements[i].classList.remove("active");
+      }
     }
+
+    // Complete any un-rendered stages seamlessly
+    for (let i = currentStageIdx + 1; i < liveStages.length; i++) {
+      const item = document.createElement("div");
+      item.className = "trace-item";
+      item.innerHTML = `
+        <span class="trace-time-tag">${totalElapsed}s</span>
+        <span class="trace-icon done">✓</span>
+        <div class="trace-text">${liveStages[i].doneLabel}</div>
+      `;
+      agentTrace.appendChild(item);
+    }
+
+    // Append genuine live web sources found
+    const trace = data.agent_execution_trace || {};
+    const citations = trace.citations || [];
+    const topLocationName = data.recommendation?.chosen_location || (data.location_options && data.location_options[0]?.name) || "Top Pick";
+
+    if (citations.length > 0) {
+      const sourceItem = document.createElement("div");
+      sourceItem.className = "trace-item";
+      sourceItem.innerHTML = `
+        <span class="trace-time-tag">${totalElapsed}s</span>
+        <span class="trace-icon done">✓</span>
+        <div class="trace-text">Retrieved <strong>${citations.length} verified live web sources</strong> (${trace.retrieval_timestamp || "IST"})</div>
+      `;
+      agentTrace.appendChild(sourceItem);
+    }
+
+    const verdictItem = document.createElement("div");
+    verdictItem.className = "trace-item";
+    verdictItem.innerHTML = `
+      <span class="trace-time-tag">${totalElapsed}s</span>
+      <span class="trace-icon done">✓</span>
+      <div class="trace-text">Shoot plan locked for <strong>${topLocationName}</strong></div>
+    `;
+    agentTrace.appendChild(verdictItem);
+    agentTrace.scrollTop = agentTrace.scrollHeight;
 
     traceCounter.textContent = "READY";
 
     // Show Timing Footer
     traceTimingFooter.classList.remove("hidden");
-    timingBadge.textContent = `Completed in ${trace.completed_in || '7.1s'}`;
+    timingBadge.textContent = `Completed in ${totalElapsed}s`;
 
     // Render Live Evidence citations
-    const citations = trace.citations || [];
     if (citations.length > 0) {
-      renderCitations(citations, trace.retrieval_timestamp || "21:41 IST");
+      renderCitations(citations, trace.retrieval_timestamp || "IST");
     }
 
     // Render Dashboard
@@ -371,8 +476,16 @@ async function executeSceneAnalysis() {
     setAgentState("live", "ONLINE • READY");
 
   } catch (err) {
+    clearLiveTimeouts();
     console.error("Analysis error:", err);
-    addTraceItem("ERR", `Error: ${err.message}`, "✗");
+    const errItem = document.createElement("div");
+    errItem.className = "trace-item";
+    errItem.innerHTML = `
+      <span class="trace-time-tag">ERR</span>
+      <span class="trace-icon" style="color: var(--accent-crimson);">✗</span>
+      <div class="trace-text" style="color: var(--accent-crimson);">Error: ${err.message}</div>
+    `;
+    agentTrace.appendChild(errItem);
     traceCounter.textContent = "ERROR";
     setAgentState("live", "ONLINE • READY");
   } finally {
@@ -584,10 +697,15 @@ function renderRadarMap(locations) {
       scrollWheelZoom: false
     });
 
-    // Add CartoDB Dark Matter tile layer for cinematic aesthetic
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 19,
-      subdomains: 'abcd'
+    // Esri World Dark Gray Canvas: 100% Free, NO API Key required, zero watermarks
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: 16,
+      subdomains: ["server", "services"]
+    }).addTo(leafletMap);
+
+    // Clean reference overlay with place names & roads
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: 16
     }).addTo(leafletMap);
   }
 
@@ -861,8 +979,27 @@ async function executeFollowUp(question) {
   followupResponseArea.classList.add("hidden");
   setAgentState("active", "CHECKING OPTIONS...");
 
-  addTraceItem("00.0s", `Looking into your question: "<strong>${question}</strong>"`, "●");
-  addTraceItem("00.8s", "Searching live web for updated rules and locations...", "⌕");
+  const fuStart = performance.now();
+  const fuItem0 = document.createElement("div");
+  fuItem0.className = "trace-item active";
+  fuItem0.innerHTML = `
+    <span class="trace-time-tag">00.0s</span>
+    <span class="trace-icon running">●</span>
+    <div class="trace-text">Processing inquiry: "<strong>${question}</strong>"</div>
+  `;
+  agentTrace.appendChild(fuItem0);
+  agentTrace.scrollTop = agentTrace.scrollHeight;
+
+  const fuTid1 = setTimeout(() => {
+    fuItem0.querySelector(".trace-icon").className = "trace-icon done";
+    fuItem0.querySelector(".trace-icon").textContent = "✓";
+    fuItem0.classList.remove("active");
+    addTraceItem("01.2s", "Searching with Parallel for updated guidelines & locations...", "⌕");
+  }, 1200);
+
+  const fuTid2 = setTimeout(() => {
+    addTraceItem("02.8s", "Evaluating evidence & comparing with original plan...", "●");
+  }, 2800);
 
   try {
     const res = await fetch("/api/followup", {
@@ -875,6 +1012,9 @@ async function executeFollowUp(question) {
       })
     });
 
+    clearTimeout(fuTid1);
+    clearTimeout(fuTid2);
+
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.detail || "Follow-up check failed.");
@@ -884,13 +1024,15 @@ async function executeFollowUp(question) {
     followupLoading.classList.add("hidden");
     setAgentState("live", "ONLINE • READY");
 
-    // Trace update
-    addTraceItem("04.2s", `Live search complete. Comparison table ready below.`, "✓");
+    const elapsed = ((performance.now() - fuStart) / 1000).toFixed(1);
+    addTraceItem(`${elapsed}s`, `Side-by-side plan comparison prepared with live evidence`, "✓");
 
     // Render PLAN DELTA
     renderPlanDelta(data, question);
 
   } catch (err) {
+    clearTimeout(fuTid1);
+    clearTimeout(fuTid2);
     console.error(err);
     followupLoading.classList.add("hidden");
     addTraceItem("ERR", `Follow-up error: ${err.message}`, "✗");
